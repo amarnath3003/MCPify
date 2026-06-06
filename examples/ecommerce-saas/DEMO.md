@@ -22,6 +22,10 @@ npm install
 npm run build
 ```
 
+Generated database tools use Prisma when `DATABASE_URL` is available or when `MCPIFY_DATABASE_MODE=prisma` is set. Without a configured Prisma database, they fall back to the built-in demo store so the MCP demo still works offline.
+
+Generated frontend tools return an automation plan by default. To execute them in a browser, install Playwright browser binaries for the generated package and set `MCPIFY_FRONTEND_BASE_URL` to the running ecommerce UI URL.
+
 ## Codex Chat Demo Script
 
 Use this as the live narration after connecting the generated server to Codex.
@@ -66,7 +70,7 @@ Tool call:
 { "name": "listProducts", "arguments": { "skip": 0, "take": 10 } }
 ```
 
-Expected result: demo database rows generated from the Prisma model surface.
+Expected result: Prisma rows when `DATABASE_URL` is configured; otherwise demo database rows generated from the Prisma model surface.
 
 ### Permission classification
 
@@ -116,4 +120,4 @@ Expected result: structured workflow output with `refundOrder` and `sendMessage`
 
 ## MVP Scope
 
-The generated server is intentionally demo-safe. Backend handlers call real example service functions. API handlers can call a live API when `MCPIFY_API_BASE_URL` is configured, otherwise they return the prepared request. Database handlers use an in-memory demo store derived from the Prisma CRUD surface.
+The generated server is intentionally demo-safe. Backend handlers call real example service functions. API handlers call a live API when `MCPIFY_API_BASE_URL` is configured, otherwise they return the prepared request. Database handlers try Prisma first when a database is configured, then fall back to an in-memory demo store. Frontend handlers can execute browser automation through Playwright when `MCPIFY_FRONTEND_BASE_URL` is configured, otherwise they return the automation plan.

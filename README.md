@@ -210,6 +210,8 @@ The generated server:
 - exposes detected workflows as callable tools
 - validates inputs with generated schemas
 - preserves permission metadata for agent-facing safety
+- executes Prisma-backed database tools when a Prisma client and `DATABASE_URL` are configured, with a demo fallback for offline showcases
+- can run frontend actions through Playwright when `MCPIFY_FRONTEND_BASE_URL` is set, otherwise returning an automation plan
 
 ## Repository Structure
 

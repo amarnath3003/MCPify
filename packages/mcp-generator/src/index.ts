@@ -68,7 +68,20 @@ export class MCPGenerator {
 
   private _packageJson(tools: ClassifiedTool[]): string {
     const entry = this._distEntry('server.js', tools);
-    return JSON.stringify({
+    const dependencies: Record<string, string> = {
+      '@modelcontextprotocol/sdk': '^1.25.2',
+      'zod':                       '^3.22.0',
+    };
+    const optionalDependencies: Record<string, string> = {};
+
+    if (tools.some(tool => tool.source === 'database')) {
+      dependencies['@prisma/client'] = '^5.0.0';
+    }
+    if (tools.some(tool => tool.source === 'frontend')) {
+      optionalDependencies.playwright = '^1.57.0';
+    }
+
+    const manifest: Record<string, unknown> = {
       name:    '@mcpify/generated-server',
       version: '1.0.0',
       type:    'module',
@@ -78,15 +91,18 @@ export class MCPGenerator {
         start: `node ${entry.replace(/^\.\//, '')}`,
         dev:   'tsc --watch',
       },
-      dependencies: {
-        '@modelcontextprotocol/sdk': '^1.25.2',
-        'zod':                       '^3.22.0',
-      },
+      dependencies,
       devDependencies: {
         typescript:    '^5.4.0',
         '@types/node': '^20.0.0',
       },
-    }, null, 2) + '\n';
+    };
+
+    if (Object.keys(optionalDependencies).length > 0) {
+      manifest.optionalDependencies = optionalDependencies;
+    }
+
+    return JSON.stringify(manifest, null, 2) + '\n';
   }
 
   // ── tsconfig.json ──────────────────────────────────────────────────────────
@@ -350,11 +366,29 @@ export async function handle_${w.name}(args: Record<string, unknown>): Promise<u
         .filter(t => t.source === 'database')
         .map(t => [t.name, this._databaseModelName(t.jsdocTags?.originalName ?? t.name)])
     );
+    const dbOps = Object.fromEntries(
+      tools
+        .filter(t => t.source === 'database')
+        .map(t => [t.name, t.jsdocTags?.originalName ?? t.name])
+    );
+    const frontendDefs = Object.fromEntries(
+      tools
+        .filter(t => t.source === 'frontend')
+        .map(t => [t.name, {
+          action: t.name,
+          originalHandler: t.originalHandler ?? null,
+          description: t.description,
+        }])
+    );
 
     return `type ApiToolDef = { method: string; path: string };
+type FrontendToolDef = { action: string; originalHandler: string | null; description: string };
 
 const API_TOOL_DEFS: Record<string, ApiToolDef> = ${JSON.stringify(apiDefs, null, 2)};
 const DB_TOOL_MODELS: Record<string, string> = ${JSON.stringify(dbModels, null, 2)};
+const DB_TOOL_OPS: Record<string, string> = ${JSON.stringify(dbOps, null, 2)};
+const FRONTEND_TOOL_DEFS: Record<string, FrontendToolDef> = ${JSON.stringify(frontendDefs, null, 2)};
+const PRISMA_UNAVAILABLE = Symbol('PRISMA_UNAVAILABLE');
 
 const DEMO_DATABASE: Record<string, Array<Record<string, any>>> = {
   users: [
@@ -423,27 +457,31 @@ async function invokeApiTool(name: string, args: Record<string, unknown>): Promi
 }
 
 async function invokeDatabaseTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+  const prismaResult = await invokePrismaTool(name, args);
+  if (prismaResult !== PRISMA_UNAVAILABLE) return prismaResult;
+
   const model = modelNameFromToolName(name);
   const store = DEMO_DATABASE[model] ??= [];
   const id = String(args.id ?? args[model.slice(0, -1) + 'Id'] ?? args[model + 'Id'] ?? '');
+  const operation = operationNameFromToolName(name);
 
-  if (/^(get|find).+ById$/.test(name)) {
+  if (/^(get|find).+ById$/.test(operation)) {
     return store.find(record => String(record.id) === id) ?? null;
   }
 
-  if (/^list/.test(name)) {
+  if (/^list/.test(operation)) {
     const skip = Number(args.skip ?? 0);
     const take = Number(args.take ?? store.length);
     return store.slice(skip, skip + take);
   }
 
-  const filterMatch = name.match(/^get.+sBy([A-Z].+)$/);
+  const filterMatch = operation.match(/^get.+sBy([A-Z].+)$/);
   if (filterMatch) {
     const field = lowerFirst(filterMatch[1]);
     return store.filter(record => String(record[field]) === String(args[field]));
   }
 
-  if (/^create/.test(name)) {
+  if (/^create/.test(operation)) {
     const record = {
       id: String(args.id ?? \`\${model.slice(0, -1)}_\${String(store.length + 1).padStart(3, '0')}\`),
       ...withoutInternalArgs(args)
@@ -452,14 +490,14 @@ async function invokeDatabaseTool(name: string, args: Record<string, unknown>): 
     return record;
   }
 
-  if (/^update/.test(name)) {
+  if (/^update/.test(operation)) {
     const record = store.find(item => String(item.id) === id);
     if (!record) throw new Error(\`database record not found: \${id}\`);
     Object.assign(record, typeof args.data === 'object' && args.data ? args.data : withoutInternalArgs(args));
     return record;
   }
 
-  if (/^delete/.test(name)) {
+  if (/^delete/.test(operation)) {
     const index = store.findIndex(item => String(item.id) === id);
     if (index < 0) throw new Error(\`database record not found: \${id}\`);
     return store.splice(index, 1)[0];
@@ -468,13 +506,158 @@ async function invokeDatabaseTool(name: string, args: Record<string, unknown>): 
   return { source: 'database', model, args: withoutInternalArgs(args) };
 }
 
+async function invokePrismaTool(name: string, args: Record<string, unknown>): Promise<unknown | typeof PRISMA_UNAVAILABLE> {
+  const shouldUsePrisma = process.env.MCPIFY_DATABASE_MODE === 'prisma' || Boolean(process.env.DATABASE_URL);
+  if (!shouldUsePrisma) return PRISMA_UNAVAILABLE;
+
+  const packageName = '@prisma/client';
+  const prismaModule = await import(packageName).catch(() => null);
+  const PrismaClient = (prismaModule as any)?.PrismaClient;
+  if (!PrismaClient) {
+    if (process.env.MCPIFY_DATABASE_MODE === 'prisma') {
+      throw new Error('Prisma mode requested, but @prisma/client is not installed.');
+    }
+    return PRISMA_UNAVAILABLE;
+  }
+
+  const prisma = getPrismaClient(PrismaClient);
+  const model = modelNameFromToolName(name);
+  const delegateName = prismaDelegateName(model);
+  const delegate = (prisma as any)[delegateName];
+  if (!delegate) {
+    throw new Error(\`Prisma delegate not found for model "\${delegateName}". Run prisma generate for the analyzed schema.\`);
+  }
+
+  try {
+    return await runPrismaOperation(delegate, operationNameFromToolName(name), model, args);
+  } catch (err: any) {
+    if (process.env.MCPIFY_DATABASE_MODE === 'prisma') throw err;
+    return PRISMA_UNAVAILABLE;
+  }
+}
+
+function getPrismaClient(PrismaClient: new () => unknown): unknown {
+  const globalKey = '__mcpifyPrismaClient';
+  const globalRecord = globalThis as Record<string, unknown>;
+  globalRecord[globalKey] ??= new PrismaClient();
+  return globalRecord[globalKey];
+}
+
+async function runPrismaOperation(
+  delegate: any,
+  operation: string,
+  model: string,
+  args: Record<string, unknown>
+): Promise<unknown> {
+  const id = String(args.id ?? args[model.slice(0, -1) + 'Id'] ?? args[model + 'Id'] ?? '');
+
+  if (/^(get|find).+ById$/.test(operation)) {
+    return await delegate.findUnique({ where: { id } });
+  }
+
+  if (/^list/.test(operation)) {
+    return await delegate.findMany({
+      skip: Number(args.skip ?? 0),
+      take: Number(args.take ?? 20),
+    });
+  }
+
+  const filterMatch = operation.match(/^get.+sBy([A-Z].+)$/);
+  if (filterMatch) {
+    const field = lowerFirst(filterMatch[1]);
+    return await delegate.findMany({ where: { [field]: args[field] } });
+  }
+
+  if (/^create/.test(operation)) {
+    return await delegate.create({ data: withoutInternalArgs(args) });
+  }
+
+  if (/^update/.test(operation)) {
+    const data = typeof args.data === 'object' && args.data ? args.data : withoutInternalArgs(args);
+    delete (data as Record<string, unknown>).id;
+    return await delegate.update({ where: { id }, data });
+  }
+
+  if (/^delete/.test(operation)) {
+    return await delegate.delete({ where: { id } });
+  }
+
+  throw new Error(\`Unsupported Prisma operation for generated database tool: \${operation}\`);
+}
+
 async function invokeFrontendAction(name: string, args: Record<string, unknown>): Promise<unknown> {
+  const automationResult = await invokeBrowserAction(name, args);
+  if (automationResult) return automationResult;
+
+  const def = FRONTEND_TOOL_DEFS[name];
   return {
     source: 'frontend',
+    mode: 'automation-plan',
     action: name,
+    originalHandler: def?.originalHandler ?? null,
+    description: def?.description ?? name,
     args: withoutInternalArgs(args),
-    result: 'frontend action extracted from UI source'
+    automation: frontendAutomationPlan(name, args),
+    note: 'Set MCPIFY_FRONTEND_BASE_URL and install Playwright to execute this action in a browser.'
   };
+}
+
+async function invokeBrowserAction(name: string, args: Record<string, unknown>): Promise<unknown | null> {
+  const baseUrl = process.env.MCPIFY_FRONTEND_BASE_URL;
+  if (!baseUrl) return null;
+
+  const packageName = 'playwright';
+  const playwright = await import(packageName).catch(() => null);
+  const chromium = (playwright as any)?.chromium;
+  if (!chromium) {
+    return {
+      source: 'frontend',
+      mode: 'browser-automation-unavailable',
+      action: name,
+      url: baseUrl,
+      automation: frontendAutomationPlan(name, args),
+      note: 'Install Playwright in the generated server package to execute browser automation.'
+    };
+  }
+
+  let browser: any;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.goto(baseUrl);
+
+    for (const fill of frontendFillPlan(name, args)) {
+      await page.getByPlaceholder(fill.placeholder).fill(fill.value);
+    }
+
+    const labels = frontendLabelsForAction(name);
+    for (const label of labels) {
+      const locator = page.getByRole('button', { name: label });
+      if (await locator.count()) {
+        await locator.first().click();
+        return {
+          source: 'frontend',
+          mode: 'browser-automation',
+          action: name,
+          url: baseUrl,
+          clicked: String(label),
+          filled: frontendFillPlan(name, args),
+        };
+      }
+    }
+
+    return {
+      source: 'frontend',
+      mode: 'browser-automation',
+      action: name,
+      url: baseUrl,
+      clicked: null,
+      filled: frontendFillPlan(name, args),
+      note: 'No matching button label was found for this extracted action.'
+    };
+  } finally {
+    await browser?.close();
+  }
 }
 
 async function invokeEventTool(name: string, args: Record<string, unknown>): Promise<unknown> {
@@ -503,6 +686,64 @@ function modelNameFromToolName(name: string): string {
   if (singular === 'OrderItem') return 'orderItems';
   if (singular === 'SupportTicket') return 'supportTickets';
   return \`\${lowerFirst(singular)}s\`;
+}
+
+function operationNameFromToolName(name: string): string {
+  return DB_TOOL_OPS[name] ?? name;
+}
+
+function prismaDelegateName(model: string): string {
+  const map: Record<string, string> = {
+    users: 'user',
+    orders: 'order',
+    orderItems: 'orderItem',
+    products: 'product',
+    supportTickets: 'supportTicket',
+  };
+  return map[model] ?? lowerFirst(model.replace(/s$/, ''));
+}
+
+function frontendAutomationPlan(name: string, args: Record<string, unknown>): Record<string, unknown> {
+  return {
+    labels: frontendLabelsForAction(name).map(String),
+    fills: frontendFillPlan(name, args),
+  };
+}
+
+function frontendLabelsForAction(name: string): Array<string | RegExp> {
+  const action = normalizeFrontendAction(name);
+  const labels: Record<string, Array<string | RegExp>> = {
+    applyDiscountCode: [/apply coupon/i, /apply discount/i, /apply promo/i],
+    checkoutCart: [/checkout/i],
+    refundOrder: [/refund/i, /request refund/i],
+    createSupportRequest: [/submit support ticket/i, /contact support/i],
+    sendMessage: [/send message/i],
+    searchItems: [/search/i],
+    exportData: [/export csv/i, /export data/i],
+    approveRequest: [/approve/i],
+    rejectRequest: [/reject/i],
+    publishContent: [/publish/i],
+    inviteUser: [/invite user/i, /invite/i],
+    deleteRecord: [/delete/i],
+  };
+  return labels[action] ?? [new RegExp(action.replace(/[A-Z]/g, char => \` \${char.toLowerCase()}\`).trim(), 'i')];
+}
+
+function frontendFillPlan(name: string, args: Record<string, unknown>): Array<{ placeholder: RegExp; value: string }> {
+  const action = normalizeFrontendAction(name);
+  if (action === 'applyDiscountCode') {
+    return [{ placeholder: /coupon|promo|discount/i, value: String(args.code ?? args.coupon ?? 'HACKATHON10') }];
+  }
+  if (action === 'searchItems') {
+    return [{ placeholder: /search/i, value: String(args.query ?? '') }];
+  }
+  return [];
+}
+
+function normalizeFrontendAction(name: string): string {
+  return name.startsWith('frontend') && name.length > 'frontend'.length
+    ? lowerFirst(name.slice('frontend'.length))
+    : name;
 }
 
 function withoutInternalArgs(args: Record<string, unknown>): Record<string, unknown> {

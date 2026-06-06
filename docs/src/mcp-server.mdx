@@ -13,4 +13,4 @@ MCPify generates a standalone TypeScript MCP server project.
 - `<project>/permissions.ts`: permission metadata.
 - `agents.md`: generated guide for agent clients.
 
-Handlers bind to matching exports from analyzed source files when possible. For non-code surfaces such as OpenAPI, database schemas, frontend actions, and events, MCPify emits MVP-safe generated handlers that return prepared requests, demo data, or extracted-action responses instead of empty placeholders.
+Handlers bind to matching exports from analyzed source files when possible. For OpenAPI tools, MCPify emits live HTTP callers when `MCPIFY_API_BASE_URL` is set and prepared requests otherwise. For Prisma-derived database tools, generated handlers try Prisma when `DATABASE_URL` or `MCPIFY_DATABASE_MODE=prisma` is configured, then fall back to demo data. For frontend actions, generated handlers can run Playwright browser automation when `MCPIFY_FRONTEND_BASE_URL` is set, otherwise they return an automation plan.
