@@ -20,7 +20,7 @@
 ---
 
 <p align="center">
-  <video src="assets/recording.webm" width="720" controls autoplay loop muted></video>
+  <video src="assets/recording.mp4" width="720" controls autoplay loop muted></video>
 </p>
 
 ---
