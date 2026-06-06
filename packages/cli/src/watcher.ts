@@ -32,6 +32,8 @@ export async function startWatcher(
       '**/*.js',
       '**/*.jsx',
       '**/*.vue',
+      '**/*.svelte',
+      '**/*.html',
       '**/*.json',
       '**/*.yaml',
       '**/*.yml',

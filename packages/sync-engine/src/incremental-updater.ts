@@ -17,7 +17,7 @@ import { WorkflowEngine } from '@mcpify/workflow-engine';
 
 const CACHE_VERSION = 1;
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
-const FRONTEND_EXTENSIONS = new Set(['.tsx', '.jsx']);
+const FRONTEND_EXTENSIONS = new Set(['.tsx', '.jsx', '.vue', '.svelte', '.html']);
 const CACHE_DIR = 'cache';
 const CACHE_FILE = 'incremental-cache.json';
 
@@ -324,7 +324,7 @@ function classifyChange(
     rel.startsWith('dist/') ||
     rel.startsWith('.git/') ||
     rel.startsWith('.mcpify/') ||
-    /\.(test|spec)\.(ts|tsx|js|jsx)$/.test(rel) ||
+    /\.(test|spec)\.(ts|tsx|js|jsx|vue|svelte)$/.test(rel) ||
     rel.endsWith('.d.ts')
   ) {
     return ['ignored'];
@@ -360,7 +360,7 @@ function classifyChange(
     reasons.push('backend');
   }
 
-  if (FRONTEND_EXTENSIONS.has(ext)) {
+  if (FRONTEND_EXTENSIONS.has(ext) || /\.component\.[jt]s$/.test(rel)) {
     reasons.push('frontend');
   }
 

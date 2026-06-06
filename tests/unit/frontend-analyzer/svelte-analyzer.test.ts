@@ -13,32 +13,32 @@ afterEach(async () => {
   );
 });
 
-test('extracts Vue template actions and form fields', async () => {
+test('extracts Svelte event directives and form fields', async () => {
   const root = await makeProject({
-    'src/SupportPanel.vue': `
-<template>
-  <form @submit.prevent="submitSupportTicket">
-    <input v-model="ticket.email" type="email" />
-    <textarea v-model="ticket.message"></textarea>
-    <button type="submit">Submit Support Ticket</button>
-  </form>
-  <button v-on:click="refundOrder(order.id)">Request refund</button>
-</template>
-<script setup lang="ts"></script>
+    'src/Checkout.svelte': `
+<script lang="ts">
+  export let cart;
+</script>
+
+<button on:click={handleCheckout}>Checkout</button>
+<form on:submit|preventDefault={handleSaveChanges}>
+  <input name="email" type="email" />
+  <input name="quantity" type="number" />
+  <button type="submit">Save Changes</button>
+</form>
 `,
   });
 
   const tools = await new FrontendAnalyzer(root).extract();
   const byName = new Map(tools.map(tool => [tool.name, tool]));
 
-  assert.equal(byName.get('createSupportRequest')?.source, 'frontend');
-  assert.equal(byName.get('createSupportRequest')?.originalHandler, 'submitSupportTicket');
-  assert.deepEqual(byName.get('createSupportRequest')?.params, ['email', 'message']);
-  assert.equal(byName.get('refundOrder')?.originalHandler, 'refundOrder');
+  assert.equal(byName.get('checkoutCart')?.originalHandler, 'handleCheckout');
+  assert.equal(byName.get('saveChanges')?.originalHandler, 'handleSaveChanges');
+  assert.deepEqual(byName.get('saveChanges')?.params, ['email', 'quantity']);
 });
 
 async function makeProject(files: Record<string, string>): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcpify-vue-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcpify-svelte-'));
   tempDirs.push(root);
 
   for (const [relativePath, source] of Object.entries(files)) {
