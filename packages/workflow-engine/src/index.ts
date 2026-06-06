@@ -9,6 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ExtractedTool, Workflow } from '@mcpify/schema-engine';
+import { GraphWorkflowDetector } from '@mcpify/graph-engine';
 import { CallGraphAnalyzer } from './call-graph-analyzer.js';
 
 export { CallGraphAnalyzer } from './call-graph-analyzer.js';
@@ -164,6 +165,7 @@ export class WorkflowEngine {
   async extract(): Promise<Workflow[]> {
     const all: Workflow[] = [
       ...await new CallGraphAnalyzer(this.tools).extract(),
+      ...new GraphWorkflowDetector().detect(this.tools),
       ...this._matchStaticPatterns(),
       ...this._detectDynamicLifecycles(),
     ];

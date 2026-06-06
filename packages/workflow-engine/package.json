@@ -15,6 +15,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
+    "@mcpify/graph-engine": "*",
     "@mcpify/schema-engine": "*",
     "ts-morph": "^21.0.0"
   },

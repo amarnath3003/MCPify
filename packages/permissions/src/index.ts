@@ -251,6 +251,81 @@ export class PermissionLayer {
 // Utility: render a permission badge for CLI output
 // ─────────────────────────────────────────────────────────────────────────────
 
+export interface RolePermissionRule {
+  tools?: string[];
+  patterns?: string[];
+  permission: PermissionLevel;
+  reason?: string;
+}
+
+export interface RolePermissionPolicy {
+  defaultRole?: string;
+  roles: Record<string, {
+    rules?: RolePermissionRule[];
+    maxPermission?: PermissionLevel;
+  }>;
+}
+
+export class RoleBasedPermissionLayer {
+  private base = new PermissionLayer();
+
+  constructor(private policy: RolePermissionPolicy) {}
+
+  classifyForRole(
+    tools: (ExtractedTool | Workflow)[],
+    role = this.policy.defaultRole ?? 'default'
+  ): ClassifiedTool[] {
+    const classified = this.base.classify(tools);
+    const rolePolicy = this.policy.roles[role];
+    if (!rolePolicy) return classified;
+
+    return classified.map(tool => {
+      const rule = firstMatchingRule(tool, rolePolicy.rules ?? []);
+      const permission = clampPermission(
+        rule?.permission ?? tool.permission,
+        rolePolicy.maxPermission
+      );
+
+      return {
+        ...tool,
+        permission,
+        safetyNotes: rule?.reason
+          ? `${safetyNote(permission, tool.name)} Role "${role}": ${rule.reason}`
+          : safetyNote(permission, tool.name),
+      };
+    });
+  }
+}
+
+function firstMatchingRule(
+  tool: ExtractedTool,
+  rules: RolePermissionRule[]
+): RolePermissionRule | undefined {
+  return rules.find(rule => {
+    if (rule.tools?.includes(tool.name)) return true;
+    return (rule.patterns ?? []).some(pattern => new RegExp(pattern, 'i').test(tool.name));
+  });
+}
+
+function clampPermission(
+  permission: PermissionLevel,
+  maxPermission?: PermissionLevel
+): PermissionLevel {
+  if (!maxPermission) return permission;
+  return permissionRank(permission) > permissionRank(maxPermission)
+    ? maxPermission
+    : permission;
+}
+
+function permissionRank(permission: PermissionLevel): number {
+  switch (permission) {
+    case 'BLOCKED': return 0;
+    case 'REQUIRES_CONFIRMATION': return 1;
+    case 'SAFE': return 2;
+    default: return 1;
+  }
+}
+
 export function permissionBadge(level: PermissionLevel): string {
   switch (level) {
     case 'SAFE':                  return '[SAFE   ]';
