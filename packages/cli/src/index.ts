@@ -21,6 +21,7 @@ program
   .option('--output <dir>',     'Output directory for generated files', './.mcpify')
   .option('--watch',            'Watch source files and re-generate on change')
   .option('--no-frontend',      'Skip frontend analysis')
+  .option('--no-events',        'Skip event listener and webhook analysis')
   .option('--no-workflows',     'Skip workflow detection')
   .option('--swagger <file>',   'Also analyze an OpenAPI/Swagger spec file')
   .option('--prisma <file>',    'Also analyze a Prisma schema file')

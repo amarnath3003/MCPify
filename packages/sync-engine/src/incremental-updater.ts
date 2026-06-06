@@ -8,6 +8,7 @@ import {
   PrismaAnalyzer,
   SwaggerConverter,
 } from '@mcpify/backend-analyzer';
+import { EventAnalyzer } from '@mcpify/event-analyzer';
 import { FrontendAnalyzer } from '@mcpify/frontend-analyzer';
 import { MCPGenerator } from '@mcpify/mcp-generator';
 import { PermissionLayer } from '@mcpify/permissions';
@@ -25,6 +26,7 @@ export interface IncrementalAnalyzeOptions {
   aiEnhance?: boolean;
   output: string;
   frontend?: boolean;
+  events?: boolean;
   workflows?: boolean;
   swagger?: string;
   prisma?: string;
@@ -187,6 +189,10 @@ export class IncrementalUpdater {
       allTools.push(...await new MongooseAnalyzer(path.resolve(this.opts.mongoose)).extract());
     }
 
+    if (this.opts.events !== false) {
+      allTools.push(...await new EventAnalyzer(this.absRoot).extract());
+    }
+
     if (this.opts.frontend !== false) {
       allTools.push(...await new FrontendAnalyzer(this.absRoot).extract());
     }
@@ -220,6 +226,11 @@ export class IncrementalUpdater {
     if (reasons.includes('backend')) {
       const backendTools = await new BackendAnalyzer(dir).extract();
       tools.push(...backendTools.filter(tool => samePath(tool.filePath, absFile)));
+    }
+
+    if (reasons.includes('event') && this.opts.events !== false) {
+      const eventTools = await new EventAnalyzer(dir).extract();
+      tools.push(...eventTools.filter(tool => samePath(tool.filePath, absFile)));
     }
 
     if (reasons.includes('frontend') && this.opts.frontend !== false) {
@@ -300,6 +311,7 @@ export class IncrementalUpdater {
   private optionsHash(): string {
     const hashInput = {
       frontend: this.opts.frontend !== false,
+      events: this.opts.events !== false,
       workflows: this.opts.workflows !== false,
       swagger: this.opts.swagger ? path.resolve(this.opts.swagger) : '',
       prisma: this.opts.prisma ? path.resolve(this.opts.prisma) : '',
@@ -358,6 +370,7 @@ function classifyChange(
 
   if (SOURCE_EXTENSIONS.has(ext)) {
     reasons.push('backend');
+    reasons.push('event');
   }
 
   if (FRONTEND_EXTENSIONS.has(ext) || /\.component\.[jt]s$/.test(rel)) {

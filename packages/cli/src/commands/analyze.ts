@@ -13,6 +13,7 @@ import {
   PrismaAnalyzer,
   SwaggerConverter,
 } from '@mcpify/backend-analyzer';
+import { EventAnalyzer }                                     from '@mcpify/event-analyzer';
 import { FrontendAnalyzer }                                  from '@mcpify/frontend-analyzer';
 import { WorkflowEngine }                                    from '@mcpify/workflow-engine';
 import { PermissionLayer, permissionBadge }                  from '@mcpify/permissions';
@@ -25,6 +26,7 @@ export interface AnalyzeOptions {
   output:      string;
   watch?:      boolean;
   frontend?:   boolean;   // default true; --no-frontend sets false
+  events?:     boolean;   // default true; --no-events sets false
   workflows?:  boolean;   // default true; --no-workflows sets false
   swagger?:    string;
   prisma?:     string;
@@ -100,6 +102,18 @@ export async function runAnalysis(rootPath: string, opts: AnalyzeOptions) {
       done(mongooseSpinner, `${mongooseTools.length} Mongoose database operations generated`);
     } catch (err: any) {
       warn(mongooseSpinner, `Mongoose analysis failed: ${err.message}`);
+    }
+  }
+
+  // Event systems and webhooks
+  if (opts.events !== false) {
+    const eventSpinner = step('Analyzing event listeners and webhooks...');
+    try {
+      const eventTools = await new EventAnalyzer(absRoot).extract();
+      allTools.push(...eventTools);
+      done(eventSpinner, `${eventTools.length} event-driven operations found`);
+    } catch (err: any) {
+      warn(eventSpinner, `Event analysis failed: ${err.message}`);
     }
   }
 

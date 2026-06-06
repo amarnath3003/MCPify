@@ -17,6 +17,7 @@
   "dependencies": {
     "@mcpify/ai-enhancer": "*",
     "@mcpify/backend-analyzer": "*",
+    "@mcpify/event-analyzer": "*",
     "@mcpify/frontend-analyzer": "*",
     "@mcpify/mcp-generator": "*",
     "@mcpify/permissions": "*",
