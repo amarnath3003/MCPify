@@ -130,22 +130,23 @@ export function PacketRail({ stages, activeIndex, onSelect }: Props) {
           const isActive = i === activeIndex;
           return (
             <div key={s.title} className="flex flex-col items-center text-center gap-2">
-              <motion.button
-                ref={(el) => {
-                  nodeRefs.current[i] = el;
-                }}
-                onClick={() => onSelect(i)}
-                animate={
-                  reduceMotion
-                    ? {}
-                    : isActive
-                    ? { scale: 1.12, y: -2 }
-                    : { scale: 1, y: 0 }
-                }
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="relative outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl"
-                aria-label={s.title}
-              >
+                <motion.button
+                  ref={(el) => {
+                    nodeRefs.current[i] = el;
+                  }}
+                  onClick={() => onSelect(i)}
+                  animate={
+                    reduceMotion
+                      ? {}
+                      : isActive
+                      ? { scale: 1.12, y: -2 }
+                      : { scale: 1, y: 0 }
+                  }
+                  whileTap={reduceMotion ? {} : { scale: 0.95, y: 2 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="relative outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl"
+                  aria-label={s.title}
+                >
                 <ToonIcon icon={s.icon} index={i} size="md" />
                 <span
                   className="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-[10px] font-bold font-mono"

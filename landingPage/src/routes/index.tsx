@@ -482,7 +482,7 @@ function Compare({ title, items, tone }: { title: string; items: string[]; tone:
           </motion.li>
         ))}
       </ul>
-    </div>
+    </motion.div>
   );
 }
 

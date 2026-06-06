@@ -262,7 +262,7 @@ const Slab = forwardRef<HTMLDivElement, {
         onFocus={onActivate}
         onClick={onActivate}
         aria-label={layer.name}
-        className="relative block w-full text-left outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl transition-all duration-200 will-change-transform"
+        className="relative block w-full text-left outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl transition-all duration-200 will-change-transform active:scale-[0.98]"
         style={{
           transform: isActive && !reduce ? "translateX(6px) scale(1.015)" : "translateX(0) scale(1)",
         }}
