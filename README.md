@@ -23,13 +23,6 @@
   <video src="assets/recording.webm" width="720" controls autoplay loop muted></video>
 </p>
 
-<p align="center">
-  <em>MCPify analyzing an ecommerce app → generating MCP tools → agent calling them live.</em><br/>
-  <a href="demo/demo.html">▶ Open interactive demo</a>
-  &nbsp;·&nbsp;
-  <a href="demo/README.md">🎬 Generate video with AI</a>
-</p>
-
 ---
 
 ## Overview
