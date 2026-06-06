@@ -1,0 +1,66 @@
+// examples/ecommerce-saas/prisma/schema.prisma
+// MCPify's PrismaAnalyzer will generate CRUD tools for each model.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      String   @default("customer")
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  orders    Order[]
+  tickets   SupportTicket[]
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  customerId String
+  status     String      @default("pending")
+  total      Float
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  customer   User        @relation(fields: [customerId], references: [id])
+  items      OrderItem[]
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  order     Order  @relation(fields: [orderId], references: [id])
+}
+
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  stock       Int     @default(0)
+  status      String  @default("active")
+  createdAt   DateTime @default(now())
+}
+
+model SupportTicket {
+  id         String   @id @default(cuid())
+  customerId String
+  orderId    String?
+  subject    String
+  body       String
+  status     String   @default("open")
+  priority   String   @default("medium")
+  agentId    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  customer   User     @relation(fields: [customerId], references: [id])
+}

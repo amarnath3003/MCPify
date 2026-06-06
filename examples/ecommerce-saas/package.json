@@ -1,0 +1,24 @@
+{
+  "name": "ecommerce-saas-example",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Example SaaS application that MCPify can analyze",
+  "scripts": {
+    "mcpify":          "mcpify analyze . --output .mcpify --prisma prisma/schema.prisma",
+    "mcpify:enhance":  "mcpify analyze . --output .mcpify --prisma prisma/schema.prisma --ai-enhance",
+    "mcpify:audit":    "mcpify audit .",
+    "mcpify:watch":    "mcpify analyze . --output .mcpify --prisma prisma/schema.prisma --watch",
+    "mcpify:simulate": "mcpify simulate ."
+  },
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "@prisma/client": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/react": "^18.0.0",
+    "@types/node": "^20.0.0",
+    "prisma": "^5.0.0"
+  }
+}

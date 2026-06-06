@@ -1,0 +1,27 @@
+{
+  "name": "@mcpify/backend-analyzer",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@mcpify/schema-engine": "*",
+    "ts-morph": "^21.0.0",
+    "@apidevtools/swagger-parser": "^10.1.0",
+    "glob": "^10.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  }
+}
