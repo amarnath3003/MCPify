@@ -173,7 +173,6 @@ export async function runInteractive() {
   if (watchMode) {
     const { startWatcher } = await import('../watcher.js');
     await startWatcher(absRoot, path.resolve(outDir), {
-      output:    outDir,
       aiEnhance: aiEnhance && !!process.env.ANTHROPIC_API_KEY,
     });
   }

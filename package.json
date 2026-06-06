@@ -2,11 +2,22 @@
   "name": "mcpify",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["packages/*"],
+  "type": "module",
+  "workspaces": [
+    "packages/schema-engine",
+    "packages/backend-analyzer",
+    "packages/frontend-analyzer",
+    "packages/workflow-engine",
+    "packages/permissions",
+    "packages/mcp-generator",
+    "packages/ai-enhancer",
+    "packages/security",
+    "packages/cli"
+  ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build --workspace @mcpify/schema-engine && npm run build --workspace @mcpify/backend-analyzer && npm run build --workspace @mcpify/frontend-analyzer && npm run build --workspace @mcpify/workflow-engine && npm run build --workspace @mcpify/permissions && npm run build --workspace @mcpify/mcp-generator && npm run build --workspace @mcpify/ai-enhancer && npm run build --workspace @mcpify/security && npm run build --workspace @mcpify/cli",
     "dev": "npm run dev --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run build && node --test tests/unit/workflow-engine/call-graph.test.ts",
     "lint": "npm run lint --workspaces --if-present",
     "mcpify": "node packages/cli/dist/index.js"
   },

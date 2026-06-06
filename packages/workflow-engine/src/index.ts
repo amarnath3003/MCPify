@@ -9,6 +9,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ExtractedTool, Workflow } from '@mcpify/schema-engine';
+import { CallGraphAnalyzer } from './call-graph-analyzer.js';
+
+export { CallGraphAnalyzer } from './call-graph-analyzer.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Static workflow patterns
@@ -160,6 +163,7 @@ export class WorkflowEngine {
 
   async extract(): Promise<Workflow[]> {
     const all: Workflow[] = [
+      ...await new CallGraphAnalyzer(this.tools).extract(),
       ...this._matchStaticPatterns(),
       ...this._detectDynamicLifecycles(),
     ];

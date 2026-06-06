@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.mcpify/
+.turbo/
+.next/
+
+*.tsbuildinfo
+*.log
+
+.env
+.env.local
+.env.*.local

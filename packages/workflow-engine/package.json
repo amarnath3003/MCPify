@@ -15,7 +15,8 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@mcpify/schema-engine": "*"
+    "@mcpify/schema-engine": "*",
+    "ts-morph": "^21.0.0"
   },
   "devDependencies": {
     "typescript": "^5.4.0",
