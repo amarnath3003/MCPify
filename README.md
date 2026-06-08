@@ -46,6 +46,14 @@ MCPify acts as a compiler for your application. It scans the parts of the codeba
 
 Stop hand-writing MCP tools. Compile your stack once. Stay in sync forever.
 
+### Codex Usage
+
+Codex is a natural fit for MCPify in a few ways:
+
+1. **Ideate** - use Codex to explore agent workflows, sketch MCP surfaces, and refine how a product should be exposed to AI.
+2. **Build** - use Codex to implement or extend the compiler, generators, analyzers, and demo apps in this repo.
+3. **Run as MCP inside Codex** - connect the generated MCP server so Codex can call real tools, inspect app surfaces, and operate against the compiled environment.
+
 ## Features
 - **Backend Analyzer:** Deep AST analysis of routes, controllers, and services to surface every callable action.
 - **Frontend Action Extraction:** React, Vue, Svelte components mapped to agent-controllable actions.
