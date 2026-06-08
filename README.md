@@ -30,14 +30,23 @@
 
 ## Overview
 
-Software wasn't built for agents. Today's apps are built for humans — disconnected from AI, glued together with brittle integrations and hand-written MCP boilerplate. 
+### Problem Statement
 
-**MCPify** solves this. It scans the parts of an application that matter to agents and produces a runnable MCP server plus the metadata an agent needs to use it safely. 
+Modern software is built for humans, not agents. The useful actions are scattered across frontend interactions, backend services, APIs, databases, and workflows, which forces AI systems into brittle browser automation or hand-written MCP boilerplate.
+
+- manual MCP tool authoring for capabilities that already exist
+- brittle browser automation for UI interactions
+- raw endpoints instead of meaningful workflows
+- permission and safety gaps at the tool boundary
+- schema and tool drift as the application changes
+
+### Solution
+
+MCPify acts as a compiler for your application. It scans the parts of the codebase that matter to agents and produces a runnable MCP server, semantic workflows, permission-aware tools, and the metadata an agent needs to use them safely.
 
 Stop hand-writing MCP tools. Compile your stack once. Stay in sync forever.
 
 ## Features
-
 - **Backend Analyzer:** Deep AST analysis of routes, controllers, and services to surface every callable action.
 - **Frontend Action Extraction:** React, Vue, Svelte components mapped to agent-controllable actions.
 - **OpenAPI → MCP:** Drop in a spec, ship a typed MCP server in seconds.
