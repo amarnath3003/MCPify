@@ -16,17 +16,17 @@ const OUTLINE = "oklch(0.14 0.03 285)";
 const letterStyle = (color: string): CSSProperties => ({
   color,
   display: "inline-block",
-  filter: [
-    `drop-shadow( 1px  0 ${OUTLINE})`,
-    `drop-shadow(-1px  0 ${OUTLINE})`,
-    `drop-shadow( 0  1px ${OUTLINE})`,
-    `drop-shadow( 0 -1px ${OUTLINE})`,
-    `drop-shadow( 1px  1px ${OUTLINE})`,
-    `drop-shadow(-1px  1px ${OUTLINE})`,
-    `drop-shadow( 1px -1px ${OUTLINE})`,
-    `drop-shadow(-1px -1px ${OUTLINE})`,
-    `drop-shadow( 3px  3px 0 ${OUTLINE})`,
-  ].join(" "),
+  textShadow: [
+    `1px 0 0 ${OUTLINE}`,
+    `-1px 0 0 ${OUTLINE}`,
+    `0 1px 0 ${OUTLINE}`,
+    `0 -1px 0 ${OUTLINE}`,
+    `1px 1px 0 ${OUTLINE}`,
+    `-1px 1px 0 ${OUTLINE}`,
+    `1px -1px 0 ${OUTLINE}`,
+    `-1px -1px 0 ${OUTLINE}`,
+    `3px 3px 0 ${OUTLINE}`,
+  ].join(", "),
 });
 
 interface ToonTextProps {
