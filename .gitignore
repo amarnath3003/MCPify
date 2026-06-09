@@ -13,3 +13,16 @@ coverage/
 .env.*.local
 MCPify_Hackathon_Explanation.pdf
 .tmp-*/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build & caches
+build/
+.eslintcache
+.vercel/
+.vite/
+
+.vercel
