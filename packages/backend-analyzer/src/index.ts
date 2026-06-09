@@ -36,6 +36,7 @@ export class BackendAnalyzer {
       this.project = new Project({
         tsConfigFilePath: tsconfigPath,
         skipAddingFilesFromTsConfig: false,
+        skipFileDependencyResolution: true,
       });
     } catch {
       this.project = new Project({
@@ -45,6 +46,7 @@ export class BackendAnalyzer {
           allowJs:        true,
           checkJs:        false,
         },
+        skipFileDependencyResolution: true,
       });
       // Manually add source files when no tsconfig exists
       this._addFilesManually();
@@ -53,11 +55,19 @@ export class BackendAnalyzer {
 
   private _addFilesManually(): void {
     const patterns = ['**/*.ts', '**/*.js'];
+    const ignores = [
+      '!' + path.join(this.rootPath, '**/node_modules/**'),
+      '!' + path.join(this.rootPath, '**/dist/**'),
+      '!' + path.join(this.rootPath, '**/build/**'),
+      '!' + path.join(this.rootPath, '**/.next/**'),
+      '!' + path.join(this.rootPath, '**/.mcpify/**'),
+    ];
     for (const pattern of patterns) {
       // glob sync via addSourceFilesFromTsConfig fallback
-      this.project.addSourceFilesAtPaths(
-        path.join(this.rootPath, pattern)
-      );
+      this.project.addSourceFilesAtPaths([
+        path.join(this.rootPath, pattern),
+        ...ignores,
+      ]);
     }
   }
 
@@ -396,6 +406,7 @@ export class DrizzleAnalyzer {
 
     const project = new Project({
       skipAddingFilesFromTsConfig: true,
+      skipFileDependencyResolution: true,
       compilerOptions: {
         allowJs: true,
         checkJs: false,

@@ -28,6 +28,7 @@ export class EventAnalyzer {
       this.project = new Project({
         tsConfigFilePath: tsconfigPath,
         skipAddingFilesFromTsConfig: false,
+        skipFileDependencyResolution: true,
       });
     } catch {
       this.project = new Project({
@@ -37,12 +38,18 @@ export class EventAnalyzer {
           checkJs: false,
           strict: true,
         },
+        skipFileDependencyResolution: true,
       });
       this.project.addSourceFilesAtPaths([
         path.join(rootPath, '**/*.ts'),
         path.join(rootPath, '**/*.tsx'),
         path.join(rootPath, '**/*.js'),
         path.join(rootPath, '**/*.jsx'),
+        '!' + path.join(rootPath, '**/node_modules/**'),
+        '!' + path.join(rootPath, '**/dist/**'),
+        '!' + path.join(rootPath, '**/build/**'),
+        '!' + path.join(rootPath, '**/.next/**'),
+        '!' + path.join(rootPath, '**/.mcpify/**'),
       ]);
     }
   }
