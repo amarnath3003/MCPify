@@ -21,12 +21,13 @@
   "scripts": {
     "build": "npm run build --workspace @mcpify/schema-engine && npm run build --workspace @mcpify/backend-analyzer && npm run build --workspace @mcpify/frontend-analyzer && npm run build --workspace @mcpify/event-analyzer && npm run build --workspace @mcpify/graph-engine && npm run build --workspace @mcpify/workflow-engine && npm run build --workspace @mcpify/permissions && npm run build --workspace @mcpify/mcp-generator && npm run build --workspace @mcpify/ai-enhancer && npm run build --workspace @mcpify/security && npm run build --workspace @mcpify/monitoring && npm run build --workspace @mcpify/sync-engine && npm run build --workspace mcpify-cli",
     "dev": "npm run dev --workspaces --if-present",
-    "test": "npm run build && node --test tests/unit/workflow-engine/call-graph.test.ts tests/unit/backend-analyzer/drizzle-analyzer.test.ts tests/unit/backend-analyzer/mongoose-analyzer.test.ts tests/unit/frontend-analyzer/jsx-onclick.test.ts tests/unit/frontend-analyzer/vue-analyzer.test.ts tests/unit/frontend-analyzer/svelte-analyzer.test.ts tests/unit/frontend-analyzer/angular-analyzer.test.ts tests/unit/frontend-analyzer/form-extraction.test.ts tests/unit/frontend-analyzer/intent-resolution.test.ts tests/unit/event-analyzer/listener-extraction.test.ts tests/unit/graph-engine/graph-builder.test.ts tests/unit/monitoring/analytics.test.ts tests/unit/permissions/role-overrides.test.ts tests/unit/sync-engine/incremental-updater.test.ts tests/unit/mcp-generator/server-renderer.test.ts",
+    "test": "npm run build && tsx --test tests/unit/workflow-engine/call-graph.test.ts tests/unit/backend-analyzer/drizzle-analyzer.test.ts tests/unit/backend-analyzer/mongoose-analyzer.test.ts tests/unit/frontend-analyzer/jsx-onclick.test.ts tests/unit/frontend-analyzer/vue-analyzer.test.ts tests/unit/frontend-analyzer/svelte-analyzer.test.ts tests/unit/frontend-analyzer/angular-analyzer.test.ts tests/unit/frontend-analyzer/form-extraction.test.ts tests/unit/frontend-analyzer/intent-resolution.test.ts tests/unit/event-analyzer/listener-extraction.test.ts tests/unit/graph-engine/graph-builder.test.ts tests/unit/monitoring/analytics.test.ts tests/unit/permissions/role-overrides.test.ts tests/unit/sync-engine/incremental-updater.test.ts tests/unit/mcp-generator/server-renderer.test.ts",
     "lint": "npm run lint --workspaces --if-present",
     "mcpify": "node packages/cli/dist/index.js"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "tsx": "^4.22.4",
     "typescript": "^5.4.0"
   },
   "license": "MIT",
