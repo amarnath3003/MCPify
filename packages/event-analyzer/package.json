@@ -1,6 +1,6 @@
 {
   "name": "@mcpify/event-analyzer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Extract event listeners and event-driven entrypoints.",
   "type": "module",
   "main": "./dist/index.js",

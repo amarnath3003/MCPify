@@ -1,6 +1,6 @@
 {
   "name": "@mcpify/workflow-engine",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Detect workflows and multi-step call flows for MCPify.",
   "type": "module",
   "main": "./dist/index.js",
