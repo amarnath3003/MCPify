@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 const lines = [
-  { text: "$ npm run mcpify -- analyze .", delay: 0 },
+  { text: "$ npx mcpify-cli analyze .", delay: 0 },
   { text: "→ Scanning backend routes...", delay: 800 },
   { text: "→ Detecting workflows...", delay: 1600 },
   { text: "→ Extracting frontend actions...", delay: 2400 },

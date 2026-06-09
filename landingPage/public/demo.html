@@ -608,7 +608,7 @@
     <p class="intro-sub">MCPify analyzes your app and generates a runnable MCP server — typed, permissioned, and agent-ready.</p>
     <div class="intro-chip">
       <span class="chip-play">▶</span>
-      npm run mcpify -- analyze examples/ecommerce-saas
+      npx mcpify-cli analyze examples/ecommerce-saas
     </div>
   </div>
 </div>
@@ -843,7 +843,7 @@ async function run() {
   tLine('');
   await sl(350);
 
-  await tType('npm run mcpify -- analyze examples/ecommerce-saas \\');
+  await tType('npx mcpify-cli analyze examples/ecommerce-saas \\');
   tLine('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--output examples/ecommerce-saas/.mcpify \\');
   tLine('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--prisma examples/ecommerce-saas/prisma/schema.prisma \\');
   tLine('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--swagger examples/ecommerce-saas/openapi.json');

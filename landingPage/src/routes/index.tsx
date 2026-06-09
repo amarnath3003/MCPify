@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   ArrowRight,
@@ -160,6 +160,17 @@ function Logo({ className = "h-9 w-auto" }: { className?: string }) {
 }
 
 function Hero() {
+  const [version, setVersion] = useState("v1.0.3");
+
+  useEffect(() => {
+    fetch("https://registry.npmjs.org/mcpify-cli/latest")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.version) setVersion(`v${data.version}`);
+      })
+      .catch((err) => console.error("Failed to fetch version:", err));
+  }, []);
+
   return (
     <section className="relative pt-40 pb-24 px-6 overflow-hidden">
       <div className="absolute inset-0 grid-bg pointer-events-none" />
@@ -174,7 +185,7 @@ function Hero() {
         >
           <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 text-xs font-mono text-muted-foreground mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow" />
-            v1.0.2 — Production ready
+            {version} — Production ready
           </div>
 
           <h1 className="text-5xl md:text-7xl font-display font-semibold tracking-tight leading-[1.02]">
@@ -187,7 +198,7 @@ function Hero() {
             MCPify automatically transforms applications, APIs, frontends, workflows, and databases into AI-native systems for autonomous agents.
           </p>
 
-          <CopyCommand command="npm run mcpify -- analyze ." />
+          <CopyCommand command="npx mcpify-cli analyze ." />
 
           <div className="mt-9 flex items-center justify-center gap-3 flex-wrap">
             <a

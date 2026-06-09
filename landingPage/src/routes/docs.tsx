@@ -62,7 +62,7 @@ const docs: DocItem[] = [
     title: "Quick Start",
     summary: "Build the repo, run the compiler, and inspect the generated MCP server in ./.mcpify.",
     highlights: ["Local source workflow", "Generated MCP output", "Works with example apps"],
-    command: "npm run mcpify -- analyze ./examples/express-api",
+    command: "npx mcpify-cli analyze ./examples/express-api",
     body: [
       {
         kind: "p",
@@ -71,7 +71,7 @@ const docs: DocItem[] = [
       { kind: "h", text: "Boot the repo" },
       { kind: "code", text: "npm install\nnpm run build" },
       { kind: "h", text: "Compile an example app" },
-      { kind: "code", text: "npm run mcpify -- analyze ./examples/express-api" },
+      { kind: "code", text: "npx mcpify-cli analyze ./examples/express-api" },
       {
         kind: "p",
         text: "The compiler writes its output to ./.mcpify by default, including the generated server, schemas, tool metadata, workflow definitions, and AGENTS.md.",
@@ -94,7 +94,7 @@ const docs: DocItem[] = [
       { kind: "code", text: "npm install\nnpm run build" },
       {
         kind: "p",
-        text: "After that, use npm run mcpify -- <command> to invoke the compiled CLI entrypoint from the root workspace.",
+        text: "After that, use npx mcpify-cli <command> to invoke the compiled CLI entrypoint from the root workspace.",
       },
     ],
   },
@@ -106,7 +106,7 @@ const docs: DocItem[] = [
     summary: "The implemented CLI exposes analyze, interactive, audit, frontend, swagger, and simulate.",
     highlights: ["6 commands", "Optional analyzers", "Watch mode"],
     command:
-      "npm run mcpify -- analyze . --swagger ./tests/fixtures/swagger/petstore.yaml --prisma ./tests/fixtures/prisma/simple.prisma",
+      "npx mcpify-cli analyze . --swagger ./tests/fixtures/swagger/petstore.yaml --prisma ./tests/fixtures/prisma/simple.prisma",
     body: [
       { kind: "h", text: "Available commands" },
       {
@@ -163,7 +163,7 @@ const docs: DocItem[] = [
     title: "Frontend Extraction",
     summary: "Frontend analysis focuses on user intent such as clicks, submissions, and navigations rather than low-level DOM details.",
     highlights: ["React and JSX", "Vue, Svelte, Angular", "UI action extraction"],
-    command: "npm run mcpify -- frontend ./examples/internal-tool --json",
+    command: "npx mcpify-cli frontend ./examples/internal-tool --json",
     body: [
       {
         kind: "p",
@@ -193,7 +193,7 @@ const docs: DocItem[] = [
     summary: "Optional schema analyzers add database operations from Prisma, Drizzle, and Mongoose into the generated tool set.",
     highlights: ["Prisma", "Drizzle", "Mongoose"],
     command:
-      "npm run mcpify -- analyze ./examples/ecommerce-saas --prisma ./examples/ecommerce-saas/prisma/schema.prisma",
+      "npx mcpify-cli analyze ./examples/ecommerce-saas --prisma ./examples/ecommerce-saas/prisma/schema.prisma",
     body: [
       {
         kind: "p",
@@ -283,7 +283,7 @@ const docs: DocItem[] = [
     title: "Audit and Simulation",
     summary: "MCPify includes both a static auditor and an optional AI simulation path for validating the generated surface.",
     highlights: ["Static audit", "Tool overview", "Optional AI security battery"],
-    command: "npm run mcpify -- simulate ./examples/express-api",
+    command: "npx mcpify-cli simulate ./examples/express-api",
     body: [
       {
         kind: "p",

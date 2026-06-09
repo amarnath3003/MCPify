@@ -90,16 +90,28 @@ Codex is a natural fit for MCPify in a few ways:
 
 ## Getting Started
 
-This repository is a monorepo containing the MCPify compiler and its supporting packages. The easiest way to try MCPify is from source:
+The easiest way to use MCPify is via `npx`. No installation required:
 
 ```bash
-npm install
-npm run build
+npx mcpify-cli analyze .
 ```
 
-Run the CLI against the flagship ecommerce example:
+To run it against the flagship ecommerce example in this repo:
 
 ```bash
+npx mcpify-cli analyze ./examples/ecommerce-saas \
+  --output ./examples/ecommerce-saas/.mcpify \
+  --prisma ./examples/ecommerce-saas/prisma/schema.prisma \
+  --swagger ./examples/ecommerce-saas/openapi.json
+```
+
+Alternatively, to build from source:
+
+```bash
+git clone https://github.com/amarnath3003/MCPify.git
+cd MCPify
+npm install
+npm run build
 npm run mcpify -- analyze ./examples/ecommerce-saas \
   --output ./examples/ecommerce-saas/.mcpify \
   --prisma ./examples/ecommerce-saas/prisma/schema.prisma \
@@ -130,7 +142,7 @@ Default command. Runs the full pipeline:
 - MCP server generation
 
 ```bash
-npm run mcpify -- analyze . \
+npx mcpify-cli analyze . \
   --swagger ./tests/fixtures/swagger/petstore.yaml \
   --prisma ./tests/fixtures/prisma/simple.prisma \
   --watch
@@ -148,7 +160,7 @@ Useful flags:
 Prompts for which analyzers to run and which source files to include.
 
 ```bash
-npm run mcpify -- interactive
+npx mcpify-cli interactive
 ```
 
 ### `frontend [path]`
@@ -156,7 +168,7 @@ npm run mcpify -- interactive
 Extracts UI actions only and can print raw JSON.
 
 ```bash
-npm run mcpify -- frontend ./examples/internal-tool --json
+npx mcpify-cli frontend ./examples/internal-tool --json
 ```
 
 ### `swagger <file>`
@@ -164,7 +176,7 @@ npm run mcpify -- frontend ./examples/internal-tool --json
 Converts an OpenAPI or Swagger spec directly into MCP tools.
 
 ```bash
-npm run mcpify -- swagger ./tests/fixtures/swagger/petstore.yaml
+npx mcpify-cli swagger ./tests/fixtures/swagger/petstore.yaml
 ```
 
 ### `audit [path]` & `simulate [path]`
@@ -172,7 +184,7 @@ npm run mcpify -- swagger ./tests/fixtures/swagger/petstore.yaml
 Run a static safety audit over the discovered tools and workflows. When `ANTHROPIC_API_KEY` is available, `simulate` executes an AI simulation battery against the discovered tool surface.
 
 ```bash
-npm run mcpify -- simulate ./examples/express-api
+npx mcpify-cli simulate ./examples/express-api
 ```
 
 ## Architecture
