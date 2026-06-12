@@ -226,7 +226,7 @@ const VERB_DESCRIPTIONS: Record<string, string> = {
 /** Generates a basic description from a camelCase tool name */
 export function ruleBasedDescription(name: string): string {
   // Split camelCase into words
-  const words = name.replace(/([A-Z])/g, ' $1').toLowerCase().split(' ');
+  const words = name.replace(/([A-Z])/g, ' $1').trim().toLowerCase().split(/\s+/).filter(Boolean);
   const verb = words[0];
   const noun = words.slice(1).join(' ');
 
