@@ -160,7 +160,7 @@ function Logo({ className = "h-9 w-auto" }: { className?: string }) {
 }
 
 function Hero() {
-  const [version, setVersion] = useState("v1.0.3");
+  const [version, setVersion] = useState("v1.0.4");
 
   useEffect(() => {
     fetch("https://registry.npmjs.org/mcpify-cli/latest")
