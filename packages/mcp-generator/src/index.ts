@@ -479,7 +479,7 @@ async function invokeDatabaseTool(name: string, args: Record<string, unknown>): 
   if (prismaResult !== PRISMA_UNAVAILABLE) return prismaResult;
 
   const model = modelNameFromToolName(name);
-  const store = DEMO_DATABASE[model] ??= [];
+  const store = DEMO_DATABASE[model] ?? [];
   const id = String(args.id ?? args[model.slice(0, -1) + 'Id'] ?? args[model + 'Id'] ?? '');
   const operation = operationNameFromToolName(name);
 
