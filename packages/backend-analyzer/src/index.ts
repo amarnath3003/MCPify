@@ -566,11 +566,12 @@ function databaseTools(modelName: string, fields: DbField[], filePath: string): 
   const idField = fields.find(field => field.name === 'id' || field.name === '_id') ?? fields[0];
   const idParam = idField?.name ?? 'id';
   const noun = modelName.toLowerCase();
+  const pluralSuffix = modelName.endsWith('s') ? 'es' : 's';
   const writableFields = fields.filter(field => field.name !== 'id' && field.name !== '_id');
 
   const tools: ExtractedTool[] = [
     databaseTool(`get${modelName}ById`, `Fetch a single ${noun} by ${idParam}`, [idParam], ['string'], filePath),
-    databaseTool(`list${modelName}s`, `List all ${noun}s with optional pagination`, ['skip', 'take'], ['number', 'number'], filePath),
+    databaseTool(`list${modelName}${pluralSuffix}`, `List all ${noun}${pluralSuffix} with optional pagination`, ['skip', 'take'], ['number', 'number'], filePath),
     databaseTool(`create${modelName}`, `Create a new ${noun} record`, writableFields.map(field => field.name), writableFields.map(field => field.type), filePath),
     databaseTool(`update${modelName}`, `Update an existing ${noun}`, [idParam, 'data'], ['string', 'object'], filePath),
     databaseTool(`delete${modelName}`, `Delete a ${noun} record`, [idParam], ['string'], filePath),
@@ -579,8 +580,8 @@ function databaseTools(modelName: string, fields: DbField[], filePath: string): 
   for (const field of fields) {
     if (!['status', 'email', 'slug', 'role'].includes(field.name)) continue;
     tools.push(databaseTool(
-      `get${modelName}sBy${pascal(field.name)}`,
-      `List ${noun}s filtered by ${field.name}`,
+      `get${modelName}${pluralSuffix}By${pascal(field.name)}`,
+      `List ${noun}${pluralSuffix} filtered by ${field.name}`,
       [field.name],
       [field.type],
       filePath
@@ -682,7 +683,7 @@ function singularPascal(name: string): string {
     .replace(/Table$/, '');
   const singular = normalized.endsWith('ies')
     ? `${normalized.slice(0, -3)}y`
-    : normalized.endsWith('s') && normalized.length > 1
+    : normalized.endsWith('s') && normalized.length > 1 && !normalized.endsWith('ss') && !normalized.endsWith('us') && !normalized.endsWith('is')
       ? normalized.slice(0, -1)
       : normalized;
   return pascal(singular);

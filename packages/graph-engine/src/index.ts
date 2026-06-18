@@ -344,7 +344,7 @@ function extractEntity(name: string): string | null {
 
 function singularize(value: string): string {
   if (value.endsWith('ies')) return `${value.slice(0, -3)}y`;
-  if (value.endsWith('s') && !value.endsWith('ss')) return value.slice(0, -1);
+  if (value.endsWith('s') && !value.endsWith('ss') && !value.endsWith('us') && !value.endsWith('is')) return value.slice(0, -1);
   return value;
 }
 
