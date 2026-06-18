@@ -58,6 +58,7 @@ interface IncrementalCache {
 
 export class IncrementalUpdater {
   private cache: IncrementalCache | null = null;
+  private initPromise: Promise<void> | null = null;
   private readonly absRoot: string;
   private readonly outDir: string;
   private readonly cachePath: string;
@@ -94,7 +95,13 @@ export class IncrementalUpdater {
     event: IncrementalUpdateEvent = 'change'
   ): Promise<IncrementalUpdateResult> {
     if (!this.cache) {
-      await this.initialize();
+      if (!this.initPromise) {
+        this.initPromise = this.initialize().then(
+          () => { this.initPromise = null; },
+          e => { this.initPromise = null; throw e; }
+        );
+      }
+      await this.initPromise;
     }
 
     const absFile = path.resolve(this.absRoot, changedFile);
