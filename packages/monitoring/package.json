@@ -1,6 +1,6 @@
 {
   "name": "@mcpify/monitoring",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Usage analytics and monitoring helpers for MCPify.",
   "type": "module",
   "main": "./dist/index.js",

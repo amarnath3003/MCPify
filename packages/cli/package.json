@@ -1,6 +1,6 @@
 {
   "name": "mcpify-cli",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "bin": {
     "mcpify": "./dist/index.js"

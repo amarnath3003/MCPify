@@ -1,6 +1,6 @@
 {
   "name": "@mcpify/sync-engine",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Incremental project scanning and update support for MCPify.",
   "type": "module",
   "main": "./dist/index.js",

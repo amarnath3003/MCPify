@@ -1,6 +1,6 @@
 {
   "name": "@mcpify/security",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Simulate and audit generated MCP tool behavior.",
   "type": "module",
   "main": "./dist/index.js",
