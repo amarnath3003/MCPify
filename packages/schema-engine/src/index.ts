@@ -113,10 +113,18 @@ function tsTypeToZod(tsType: string): string {
     return `${tsTypeToZod(trimmed.replace(/\s*\|\s*undefined$/, '').trim())}.optional()`;
   }
   // String literal union types e.g. 'pending' | 'active' | 'cancelled'
-  if (trimmed.includes('|')) {
+  // Guards: | must not be inside angle brackets; members must not be known TS types
+  let depth = 0;
+  let isTopLevelUnion = false;
+  for (const ch of trimmed) {
+    if (ch === '<') depth++;
+    if (ch === '>') depth--;
+    if (ch === '|' && depth === 0) { isTopLevelUnion = true; break; }
+  }
+  if (isTopLevelUnion) {
     const members = trimmed.split('|').map(m => m.trim().replace(/^['"]|['"]$/g, ''));
-    // Only generate z.enum when all members are simple identifiers or kebab/snake-case strings
-    if (members.every(m => /^[a-z0-9_-]+$/i.test(m) && m.length > 0)) {
+    const TS_TYPES = new Set(['string','number','boolean','bigint','symbol','null','undefined','void','any','never','unknown','object','Date','Error','Map','Set','Promise','Array','Record','Readonly','Partial','Required','Pick','Omit','Exclude','Extract']);
+    if (members.every(m => /^[a-z0-9_-]+$/i.test(m) && m.length > 0 && !TS_TYPES.has(m))) {
       return `z.enum([${members.map(m => `'${m}'`).join(', ')}])`;
     }
   }
