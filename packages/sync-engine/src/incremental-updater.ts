@@ -401,9 +401,9 @@ function groupByFile(tools: ExtractedTool[]): Record<string, ExtractedTool[]> {
 function dedupeTools(tools: ExtractedTool[]): ExtractedTool[] {
   const seen = new Set<string>();
   return tools.filter(tool => {
-    tool.name = sanitizeToolName(tool.name);
-    if (seen.has(tool.name)) return false;
-    seen.add(tool.name);
+    const name = sanitizeToolName(tool.name);
+    if (seen.has(name)) return false;
+    seen.add(name);
     return true;
   });
 }
