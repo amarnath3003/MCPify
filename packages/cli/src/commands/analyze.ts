@@ -225,43 +225,46 @@ export async function runAnalysis(rootPath: string, opts: AnalyzeOptions) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function namespaceDuplicateTools(tools: ExtractedTool[]): ExtractedTool[] {
+  const sanitized = new Map<ExtractedTool, string>();
   const counts = new Map<string, number>();
   for (const tool of tools) {
-    tool.name = sanitizeToolName(tool.name);
-    counts.set(tool.name, (counts.get(tool.name) ?? 0) + 1);
+    const name = sanitizeToolName(tool.name);
+    sanitized.set(tool, name);
+    counts.set(name, (counts.get(name) ?? 0) + 1);
   }
 
   const used = new Set<string>();
   return tools.map(tool => {
-    if ((counts.get(tool.name) ?? 0) === 1 && !used.has(tool.name)) {
-      used.add(tool.name);
+    const name = sanitized.get(tool)!;
+    if ((counts.get(name) ?? 0) === 1 && !used.has(name)) {
+      used.add(name);
       return tool;
     }
 
-    const preferredName = used.has(tool.name)
-      ? `${tool.source}${pascal(tool.name)}`
-      : tool.name;
+    const preferredName = used.has(name)
+      ? `${tool.source}${pascal(name)}`
+      : name;
 
-    let name = preferredName;
+    let resultName = preferredName;
     let index = 2;
-    while (used.has(name)) {
-      name = `${preferredName}${index}`;
+    while (used.has(resultName)) {
+      resultName = `${preferredName}${index}`;
       index += 1;
     }
 
-    used.add(name);
-    return name === tool.name
+    used.add(resultName);
+    return resultName === name
       ? tool
       : {
           ...tool,
-          name,
+          name: resultName,
           jsdocTags: {
             ...(tool.jsdocTags ?? {}),
-            originalName: tool.name,
+            originalName: name,
           },
           description: tool.description
             ? `${tool.description} (${tool.source} surface)`
-            : `${tool.source} surface for ${tool.name}`,
+            : `${tool.source} surface for ${name}`,
         };
   });
 }
