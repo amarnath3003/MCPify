@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@mcpify/sync-engine",
   "version": "1.0.5",
   "description": "Incremental project scanning and update support for MCPify.",

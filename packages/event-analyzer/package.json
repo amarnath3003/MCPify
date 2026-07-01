@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@mcpify/event-analyzer",
   "version": "1.0.5",
   "description": "Extract event listeners and event-driven entrypoints.",

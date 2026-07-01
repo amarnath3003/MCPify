@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@mcpify/schema-engine",
   "version": "1.0.5",
   "description": "Shared schemas and types for MCPify analysis output.",

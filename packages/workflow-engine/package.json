@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@mcpify/workflow-engine",
   "version": "1.0.5",
   "description": "Detect workflows and multi-step call flows for MCPify.",

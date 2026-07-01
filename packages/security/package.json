@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@mcpify/security",
   "version": "1.0.5",
   "description": "Simulate and audit generated MCP tool behavior.",
