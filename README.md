@@ -76,7 +76,7 @@ Codex is a natural fit for MCPify in a few ways:
 3. **Run as MCP inside Codex** - connect the generated MCP server so Codex can call real tools, inspect app surfaces, and operate against the compiled environment.
 
 ## Features
-- **Backend Analyzer:** Deep AST analysis of routes, controllers, and services to surface every callable action.
+- **Backend Analyzer:** Deep AST analysis of routes, controllers, and services to surface every callable action. Framework-aware for Express, Fastify, NestJS, and Next.js — including inline, non-exported handlers.
 - **Frontend Action Extraction:** React, Vue, Svelte components mapped to agent-controllable actions.
 - **OpenAPI → MCP:** Drop in a spec, ship a typed MCP server in seconds.
 - **Workflow Engine:** Multi-step processes detected and exposed as atomic agent capabilities.
@@ -153,6 +153,7 @@ Useful flags:
 - `--no-frontend` skip UI action extraction
 - `--no-events` skip webhook and listener analysis
 - `--no-workflows` skip workflow detection
+- `--reachable-only` emit only externally-reachable backend actions (skip internal helpers)
 - `--ai-enhance` improve tool descriptions (requires `ANTHROPIC_API_KEY`)
 - `--swagger <file>` analyze an OpenAPI/Swagger spec
 - `--prisma <file>` analyze a Prisma schema file

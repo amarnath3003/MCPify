@@ -15,11 +15,50 @@ import {
   SourceFile,
   JSDoc,
   type ObjectLiteralExpression,
+  type ParameterDeclaration,
 } from 'ts-morph';
 import path from 'path';
 import fs from 'fs/promises';
 import { glob } from 'glob';
 import type { ExtractedTool } from '@mcpify/schema-engine';
+import { runFrameworkAnalyzers } from './frameworks/index.js';
+
+export * from './frameworks/index.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reachability
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ExtractOptions {
+  /** Drop tools inferred to be internal helpers rather than reachable entry points. */
+  onlyReachable?: boolean;
+}
+
+// Prefixes of exported functions that are almost always internal helpers, not
+// agent-callable actions (converters, guards, formatters).
+const INTERNAL_NAME = /^(is|has|should|format|parse|serialize|deserialize|sanitize|assert|clone|to[A-Z]|from[A-Z])/;
+
+// Bare uppercase HTTP verbs are Next.js App Router route handler exports — the
+// framework analyzer emits them as routes, so the generic scan must skip them.
+const HTTP_VERB_EXPORT = /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/;
+
+/**
+ * Best-effort guess at whether a tool is an external entry point. Route/API/
+ * event/database/frontend tools are entry points by construction; a plain
+ * exported backend function is treated as reachable when it is async (an I/O
+ * action) and not named like a pure utility.
+ */
+export function inferReachable(tool: ExtractedTool): boolean {
+  if (tool.httpMethod || tool.framework) return true;
+  if (tool.source !== 'backend') return true;
+  if (INTERNAL_NAME.test(tool.name)) return false;
+  return tool.isAsync;
+}
+
+/** Keep only tools inferred to be externally reachable. */
+export function filterReachable(tools: ExtractedTool[]): ExtractedTool[] {
+  return tools.filter(t => (t.reachable ?? inferReachable(t)));
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BackendAnalyzer
@@ -54,29 +93,20 @@ export class BackendAnalyzer {
   }
 
   private _addFilesManually(): void {
-    const patterns = ['**/*.ts', '**/*.js'];
-    const ignores = [
-      '!' + path.join(this.rootPath, '**/node_modules/**'),
-      '!' + path.join(this.rootPath, '**/dist/**'),
-      '!' + path.join(this.rootPath, '**/build/**'),
-      '!' + path.join(this.rootPath, '**/.next/**'),
-      '!' + path.join(this.rootPath, '**/.svelte-kit/**'),
-      '!' + path.join(this.rootPath, '**/.nuxt/**'),
-      '!' + path.join(this.rootPath, '**/coverage/**'),
-      '!' + path.join(this.rootPath, '**/out/**'),
-      '!' + path.join(this.rootPath, '**/.turbo/**'),
-      '!' + path.join(this.rootPath, '**/.mcpify/**'),
+    // fast-glob (used by ts-morph) needs POSIX separators even on Windows, so
+    // normalize backslashes — path.join here would produce unmatchable patterns.
+    const root = this.rootPath.replace(/\\/g, '/').replace(/\/$/, '');
+    const ignoreDirs = [
+      'node_modules', 'dist', 'build', '.next', '.svelte-kit',
+      '.nuxt', 'coverage', 'out', '.turbo', '.mcpify',
     ];
-    for (const pattern of patterns) {
-      // glob sync via addSourceFilesFromTsConfig fallback
-      this.project.addSourceFilesAtPaths([
-        path.join(this.rootPath, pattern),
-        ...ignores,
-      ]);
-    }
+    this.project.addSourceFilesAtPaths([
+      `${root}/**/*.{ts,tsx,js,jsx}`,
+      ...ignoreDirs.map(d => `!${root}/**/${d}/**`),
+    ]);
   }
 
-  async extract(): Promise<ExtractedTool[]> {
+  async extract(opts: ExtractOptions = {}): Promise<ExtractedTool[]> {
     const tools: ExtractedTool[] = [];
 
     for (const sourceFile of this.project.getSourceFiles()) {
@@ -84,7 +114,36 @@ export class BackendAnalyzer {
       tools.push(...this._extractFromFile(sourceFile));
     }
 
-    return this._deduplicate(tools);
+    // ── Framework-aware route extraction (express, fastify, nest, next) ────────
+    // These surface inline / non-exported HTTP handlers the generic scan misses
+    // and carry httpMethod/httpPath so permissions can classify by verb.
+    const { tools: frameworkTools } = runFrameworkAnalyzers({
+      rootPath: this.rootPath,
+      deps:     await this._readDeps(),
+      project:  this.project,
+    });
+
+    const merged = this._deduplicate([...frameworkTools, ...tools]);
+
+    // Tag externally-reachable tools vs internal helpers so callers can filter.
+    for (const tool of merged) {
+      if (tool.reachable === undefined) tool.reachable = inferReachable(tool);
+    }
+
+    return opts.onlyReachable ? merged.filter(t => t.reachable) : merged;
+  }
+
+  private async _readDeps(): Promise<Record<string, string>> {
+    try {
+      const raw = await fs.readFile(path.join(this.rootPath, 'package.json'), 'utf-8');
+      const pkg = JSON.parse(raw) as {
+        dependencies?: Record<string, string>;
+        devDependencies?: Record<string, string>;
+      };
+      return { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
+    } catch {
+      return {};
+    }
   }
 
   private _shouldSkip(sf: SourceFile): boolean {
@@ -144,12 +203,13 @@ export class BackendAnalyzer {
         const scope = method.getScope();
         if (scope === 'private' || scope === 'protected') continue;
         const name = `${cls.getName()}_${method.getName()}`;
+        const { names, types } = this._paramsOf(method.getParameters());
         tools.push({
           name,
           source:      'backend',
           description: this._extractJsDoc(method.getJsDocs()),
-          params:      method.getParameters().map((p, i) => this._sanitizeParamName(p.getName(), i)),
-          paramTypes:  method.getParameters().map(p => p.getType().getText()),
+          params:      names,
+          paramTypes:  types,
           returnType:  method.getReturnType().getText(),
           filePath:    sf.getFilePath(),
           permission:  'UNKNOWN',
@@ -164,13 +224,14 @@ export class BackendAnalyzer {
 
   private _fnDeclToTool(fn: FunctionDeclaration): ExtractedTool | null {
     const name = fn.getName();
-    if (!name || name.startsWith('_')) return null;
+    if (!name || name.startsWith('_') || HTTP_VERB_EXPORT.test(name)) return null;
+    const { names, types } = this._paramsOf(fn.getParameters());
     return {
       name,
       source:      'backend',
       description: this._extractJsDoc(fn.getJsDocs()),
-      params:      fn.getParameters().map((p, i) => this._sanitizeParamName(p.getName(), i)),
-      paramTypes:  fn.getParameters().map(p => p.getType().getText()),
+      params:      names,
+      paramTypes:  types,
       returnType:  fn.getReturnType().getText().replace(/^Promise<(.+)>$/, '$1'),
       filePath:    fn.getSourceFile().getFilePath(),
       permission:  'UNKNOWN',
@@ -184,13 +245,14 @@ export class BackendAnalyzer {
     fn: ArrowFunction,
     filePath: string
   ): ExtractedTool | null {
-    if (!name || name.startsWith('_')) return null;
+    if (!name || name.startsWith('_') || HTTP_VERB_EXPORT.test(name)) return null;
+    const { names, types } = this._paramsOf(fn.getParameters());
     return {
       name,
       source:      'backend',
       description: '',
-      params:      fn.getParameters().map((p, i) => this._sanitizeParamName(p.getName(), i)),
-      paramTypes:  fn.getParameters().map(p => p.getType().getText()),
+      params:      names,
+      paramTypes:  types,
       returnType:  fn.getReturnType().getText().replace(/^Promise<(.+)>$/, '$1'),
       filePath,
       permission:  'UNKNOWN',
@@ -211,6 +273,38 @@ export class BackendAnalyzer {
       }
     }
     return tags;
+  }
+
+  /**
+   * Resolve a parameter list into flat name/type arrays. Destructured object
+   * params (`{ a, b }: T`) are expanded into their individual fields so each
+   * becomes a typed schema property instead of an opaque `payload_N`.
+   */
+  private _paramsOf(parameters: ParameterDeclaration[]): { names: string[]; types: string[] } {
+    const names: string[] = [];
+    const types: string[] = [];
+
+    parameters.forEach((param, i) => {
+      const nameNode = param.getNameNode();
+      if (Node.isObjectBindingPattern(nameNode)) {
+        const elements = nameNode.getElements();
+        if (elements.length === 0) {
+          names.push(`payload_${i}`);
+          types.push(param.getType().getText());
+          return;
+        }
+        for (const el of elements) {
+          if (el.getDotDotDotToken()) continue; // skip `...rest`
+          names.push(el.getName());
+          types.push(el.getType().getText());
+        }
+      } else {
+        names.push(this._sanitizeParamName(param.getName(), i));
+        types.push(param.getType().getText());
+      }
+    });
+
+    return { names, types };
   }
 
   private _sanitizeParamName(name: string, index: number): string {
@@ -343,51 +437,33 @@ export class PrismaAnalyzer {
 
   private _parseModels(schema: string): ExtractedTool[] {
     const tools: ExtractedTool[] = [];
-    const modelRegex = /model\s+(\w+)\s*\{([^}]+)\}/g;
-    let match: RegExpExecArray | null;
 
-    while ((match = modelRegex.exec(schema)) !== null) {
-      const modelName = match[1];
-      const body = match[2];
+    for (const { name: modelName, body } of prismaBlocks(schema, 'model')) {
+      const fields = parsePrismaFields(body);
+      const scalarFields = fields.filter(f => !f.isRelation);
 
-      // Parse fields
-      const fieldLines = body
-        .split('\n')
-        .map(l => l.trim())
-        .filter(l => l && !l.startsWith('//') && !l.startsWith('@@'));
-
-      const fields = fieldLines
-        .map(line => {
-          const parts = line.split(/\s+/);
-          return parts.length >= 2
-            ? { name: parts[0], type: parts[1].replace('?', '') }
-            : null;
-        })
-        .filter(Boolean) as { name: string; type: string }[];
-
-      const idField = fields.find(f => f.name === 'id') ?? fields[0];
-      const noun = modelName.toLowerCase();
+      const idField = fields.find(f => f.isId) ?? scalarFields.find(f => f.name === 'id') ?? scalarFields[0];
       const idParam = idField?.name ?? 'id';
+      const noun = modelName.toLowerCase();
+      const writable = scalarFields.filter(f => f.name !== idParam);
 
-      // Generate standard CRUD operations
       tools.push(
-        this._tool(`get${modelName}ById`,  `Fetch a single ${noun} by ${idParam}`, [idParam], ['string']),
-        this._tool(`list${modelName}s`,    `List all ${noun}s with optional pagination`, ['skip', 'take'], ['number', 'number']),
-        this._tool(`create${modelName}`,   `Create a new ${noun} record`, fields.filter(f => f.name !== 'id').map(f => f.name), fields.filter(f => f.name !== 'id').map(f => f.type.toLowerCase())),
-        this._tool(`update${modelName}`,   `Update an existing ${noun}`, [idParam, 'data'], ['string', 'object']),
-        this._tool(`delete${modelName}`,   `Delete a ${noun} record`, [idParam], ['string']),
+        this._tool(`get${modelName}ById`, `Fetch a single ${noun} by ${idParam}`, [idParam], ['string']),
+        this._tool(`list${modelName}s`,   `List all ${noun}s with optional pagination`, ['skip', 'take'], ['number', 'number']),
+        this._tool(`create${modelName}`,  `Create a new ${noun} record`, writable.map(f => f.name), writable.map(f => f.tsType)),
+        this._tool(`update${modelName}`,  `Update an existing ${noun}`, [idParam, 'data'], ['string', 'object']),
+        this._tool(`delete${modelName}`,  `Delete a ${noun} record`, [idParam], ['string']),
       );
 
-      // Status-aware list if a `status` field exists
-      if (fields.some(f => f.name === 'status')) {
-        tools.push(
-          this._tool(
-            `get${modelName}sByStatus`,
-            `List ${noun}s filtered by status`,
-            ['status'],
-            ['string']
-          )
-        );
+      // Field-aware finders for common lookup columns.
+      for (const field of scalarFields) {
+        if (!['status', 'email', 'slug', 'role'].includes(field.name)) continue;
+        tools.push(this._tool(
+          `get${modelName}sBy${field.name.charAt(0).toUpperCase()}${field.name.slice(1)}`,
+          `List ${noun}s filtered by ${field.name}`,
+          [field.name],
+          [field.tsType],
+        ));
       }
     }
 
@@ -560,6 +636,84 @@ export class MongooseAnalyzer {
 interface DbField {
   name: string;
   type: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Prisma schema parsing
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface PrismaField {
+  name: string;
+  tsType: string;
+  isRelation: boolean;
+  isId: boolean;
+}
+
+const PRISMA_SCALARS = new Set([
+  'String', 'Boolean', 'Int', 'BigInt', 'Float', 'Decimal', 'DateTime', 'Json', 'Bytes',
+]);
+
+/** Extract top-level `keyword Name { … }` blocks with brace balancing (handles nested `{}`). */
+function prismaBlocks(schema: string, keyword: string): { name: string; body: string }[] {
+  const blocks: { name: string; body: string }[] = [];
+  const re = new RegExp(`\\b${keyword}\\s+(\\w+)\\s*\\{`, 'g');
+  let m: RegExpExecArray | null;
+
+  while ((m = re.exec(schema)) !== null) {
+    const start = re.lastIndex; // index just past the opening brace
+    let depth = 1;
+    let i = start;
+    for (; i < schema.length && depth > 0; i++) {
+      if (schema[i] === '{') depth++;
+      else if (schema[i] === '}') depth--;
+    }
+    blocks.push({ name: m[1], body: schema.slice(start, i - 1) });
+    re.lastIndex = i;
+  }
+  return blocks;
+}
+
+function parsePrismaFields(body: string): PrismaField[] {
+  const fields: PrismaField[] = [];
+
+  for (const raw of body.split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('//') || line.startsWith('@@')) continue;
+
+    const parts = line.split(/\s+/);
+    if (parts.length < 2) continue;
+    const name = parts[0];
+    if (!/^[A-Za-z_]\w*$/.test(name)) continue;
+
+    const rawType = parts[1];
+    const isArray = rawType.endsWith('[]');
+    const baseType = rawType.replace(/[[\]?]/g, '');
+    const isScalar = PRISMA_SCALARS.has(baseType);
+    // A relation is a model-typed field: non-scalar and either an explicit
+    // @relation or a list of a non-scalar type. Non-scalar singulars without
+    // @relation are treated as enums (scalar-ish → string).
+    const isRelation = !isScalar && (line.includes('@relation') || isArray);
+
+    fields.push({
+      name,
+      tsType:     prismaTsType(baseType, isArray, isScalar),
+      isRelation,
+      isId:       line.includes('@id'),
+    });
+  }
+
+  return fields;
+}
+
+function prismaTsType(baseType: string, isArray: boolean, isScalar: boolean): string {
+  const scalar =
+    baseType === 'String'   ? 'string' :
+    baseType === 'Boolean'  ? 'boolean' :
+    baseType === 'DateTime' ? 'Date' :
+    baseType === 'Json'     ? 'object' :
+    (['Int', 'BigInt', 'Float', 'Decimal'].includes(baseType)) ? 'number' :
+    isScalar ? 'string' : 'string'; // Bytes + enums → string
+  return isArray ? `${scalar}[]` : scalar;
 }
 
 function databaseTools(modelName: string, fields: DbField[], filePath: string): ExtractedTool[] {

@@ -1,6 +1,6 @@
-{
+﻿{
   "name": "mcpify-cli",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "bin": {
     "mcpify": "./dist/index.js"
@@ -55,7 +55,7 @@
     "dist",
     "README.md"
   ],
-  "description": "Compile application code into a runnable Model Context Protocol (MCP) server — and auto-register it with Codex, Claude, and VS Code.",
+  "description": "Compile application code into a runnable Model Context Protocol (MCP) server â€” and auto-register it with Codex, Claude, and VS Code.",
   "keywords": [
     "mcp",
     "model-context-protocol",

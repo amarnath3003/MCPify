@@ -49,6 +49,13 @@ export interface ExtractedTool {
   httpPath?: string;
   /** JSDoc tags for richer metadata */
   jsdocTags?: Record<string, string>;
+  /** Backend framework this tool was resolved from, if any (express, fastify, nestjs, next). */
+  framework?: string;
+  /**
+   * Whether this tool is externally reachable (bound to an HTTP route / event /
+   * exported entry point) versus an internal helper. Undefined means "unknown".
+   */
+  reachable?: boolean;
 }
 
 // ── Workflow ──────────────────────────────────────────────────────────────────

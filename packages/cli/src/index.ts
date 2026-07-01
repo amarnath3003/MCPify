@@ -26,6 +26,7 @@ program
   .option('--no-frontend',      'Skip frontend analysis')
   .option('--no-events',        'Skip event listener and webhook analysis')
   .option('--no-workflows',     'Skip workflow detection')
+  .option('--reachable-only',   'Emit only externally-reachable backend actions (skip internal helpers)')
   .option('--swagger <file>',   'Also analyze an OpenAPI/Swagger spec file')
   .option('--prisma <file>',    'Also analyze a Prisma schema file')
   .option('--drizzle <path>',    'Also analyze Drizzle table definitions')

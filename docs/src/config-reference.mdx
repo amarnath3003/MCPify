@@ -9,6 +9,22 @@ MCPify v1.0 is designed around CLI flags. A project config file can be added lat
 - `--no-frontend`: backend-only generation.
 - `--no-events`: skip event-driven tools.
 - `--no-workflows`: skip workflow orchestration.
+- `--reachable-only`: emit only externally-reachable backend actions (HTTP routes, framework handlers, async entry points) and drop internal helpers.
 - `--watch`: keep output in sync while editing.
+
+## Backend framework coverage
+
+Backend analysis is framework-aware. When the matching dependency is present (or a
+handler pattern is detected) MCPify surfaces routes — including inline, non-exported
+handlers — with their HTTP method and path:
+
+- **Express** — `app.get`/`router.post` registrations, resolving one level of
+  `app.use('/base', router)` mount prefixes.
+- **Fastify** — shorthand `fastify.get(...)` and `fastify.route({ ... })`, lifting
+  params from a route's JSON `schema` when present.
+- **NestJS** — `@Controller` / `@Get` / `@Post` … decorators, with params from
+  `@Param`, `@Query`, and `@Body`.
+- **Next.js** — App Router `route.ts` handlers, `pages/api` routes, and
+  `'use server'` action files.
 
 Generated servers include their own `package.json` and can be built independently.

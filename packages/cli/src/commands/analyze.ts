@@ -41,6 +41,7 @@ export interface AnalyzeOptions {
   frontend?:   boolean;   // default true; --no-frontend sets false
   events?:     boolean;   // default true; --no-events sets false
   workflows?:  boolean;   // default true; --no-workflows sets false
+  reachableOnly?: boolean; // --reachable-only: drop internal backend helpers
   swagger?:    string;
   prisma?:     string;
   drizzle?:    string;
@@ -63,7 +64,7 @@ export async function runAnalysis(rootPath: string, opts: AnalyzeOptions) {
   const backendSpinner = step('Analyzing backend TypeScript/JavaScript…');
   try {
     const analyzer   = new BackendAnalyzer(absRoot);
-    const backendTools = await analyzer.extract();
+    const backendTools = await analyzer.extract({ onlyReachable: opts.reachableOnly });
     allTools.push(...backendTools);
     done(backendSpinner, `${backendTools.length} backend actions found`);
   } catch (err: any) {
